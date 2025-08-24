@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 )
 
 var videoFile string
@@ -14,28 +13,22 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the video file exists
 	if _, err := os.Stat(videoFile); os.IsNotExist(err) {
 		http.Error(w, "Video file not found", http.StatusNotFound)
+		log.Printf("Video file not found: %s", videoFile)
 		return
 	}
 
-	w.Header().Set("Content-Type", "video/x-flv")
+	// Set the Content-Type for WebM
+	w.Header().Set("Content-Type", "video/webm")
 
-	log.Printf("Streaming video: %s", videoFile)
+	log.Printf("Serving video: %s", videoFile)
 
-	// Use FFmpeg to stream the video file
-	cmd := exec.Command("ffmpeg", "-re", "-i", videoFile, "-c:v", "libx264", "-f", "flv", "pipe:1")
-	cmd.Stdout = w
-	cmd.Stderr = log.Writer()
-
-	if err := cmd.Run(); err != nil {
-		http.Error(w, "Error streaming video", http.StatusInternalServerError)
-		log.Printf("Error: %v", err)
-	}
+	// Serve the WebM file directly
+	http.ServeFile(w, r, videoFile)
 }
 
 func main() {
 	// Get the video file path from command line arguments
-	// Define a command-line flag for the video file path
-	flag.StringVar(&videoFile, "file", "", "Path to the video file")
+	flag.StringVar(&videoFile, "file", "", "Path to the WebM video file")
 	flag.Parse()
 
 	// Check if the video file path is provided
